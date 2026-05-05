@@ -22,7 +22,7 @@ services:
     ports:
       - '172.17.0.1:3000:3000'
     volumes:
-      - './rootfs/config/homepage:/app/config'
+      - './volumes/config/homepage:/app/config'
       - '/var/run/docker.sock:/var/run/docker.sock:ro'
     networks:
       - homepage
