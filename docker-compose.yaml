@@ -19,6 +19,8 @@ services:
       TZ: ${TZ:-America/New_York}
       PUID: ${SERVICE_USER:-1000}
       PGID: ${SERVICE_GROUP:-1000}
+      CONTAINER_NAME: homepage-app
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
     ports:
       - '172.17.0.1:3000:3000'
     volumes:
@@ -26,8 +28,30 @@ services:
       - '/var/run/docker.sock:/var/run/docker.sock:ro'
     networks:
       - homepage
+      - proxy
+      - cloudflare
+    labels:
+      - 'traefik.enable=true'
+      - 'cloudflare.enable=true'
+      - 'traefik.docker.network=proxy'
+      - 'cloudflare.service=http://homepage-app:3000'
+      - 'cloudflare.hostname=homepage.${CLOUDFLARE_ZONE_NAME:-}'
+      - 'traefik.http.routers.homepage-app.entrypoints=http'
+      - 'traefik.http.routers.homepage-app-secure.tls=true'
+      - 'traefik.http.routers.homepage-app.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.middlewares.homepage-app-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.homepage-app.middlewares=homepage-app-https-redirect'
+      - 'traefik.http.routers.homepage-app-secure.entrypoints=https'
+      - 'traefik.http.routers.homepage-app-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.routers.homepage-app-secure.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.homepage-app-secure.service=homepage-app'
+      - 'traefik.http.services.homepage-app.loadbalancer.server.port=3000'
 
 networks:
   homepage:
     name: homepage
     external: false
+  proxy:
+    external: true
+  cloudflare:
+    external: true
