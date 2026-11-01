@@ -1,0 +1,45 @@
+name: homepage
+x-logging: &default-logging
+  options:
+    max-size: '5m'
+    max-file: '1'
+  driver: json-file
+
+services:
+  app:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage-app
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: homepage-app
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
+      HOMEPAGE_ALLOWED_HOSTS: ${BASE_HOST_NAME:-$HOSTNAME}
+    volumes:
+      - './volumes/config/homepage:/app/config:z'
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.homepage-app.entrypoints=http'
+      - 'traefik.http.routers.homepage-app.rule=Host(`${BASE_HOST_NAME:-$HOSTNAME}`)'
+      - 'traefik.http.middlewares.homepage-app-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.homepage-app.middlewares=homepage-app-https-redirect'
+      - 'traefik.http.routers.homepage-app-secure.entrypoints=https'
+      - 'traefik.http.routers.homepage-app-secure.rule=Host(`${BASE_HOST_NAME:-$HOSTNAME}`)'
+      - 'traefik.http.routers.homepage-app-secure.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.homepage-app-secure.service=homepage-app'
+      - 'traefik.http.services.homepage-app.loadbalancer.server.port=3000'
+    networks:
+      - homepage
+      - traefik
+
+networks:
+  homepage:
+    name: homepage
+    external: false
+  traefik:
+    external: true
