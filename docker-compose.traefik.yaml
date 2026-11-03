@@ -19,6 +19,12 @@ services:
       CONTAINER_NAME: homepage-app
       HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
       HOMEPAGE_ALLOWED_HOSTS: ${BASE_HOST_NAME:-$HOSTNAME}
+    healthcheck:
+      test: ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider -Y off http://127.0.0.1:$$PORT/api/healthcheck || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     volumes:
       - './volumes/config/homepage:/app/config:z'
     labels:
